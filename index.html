@@ -97,6 +97,7 @@ button{cursor:pointer;-webkit-tap-highlight-color:transparent;-webkit-touch-call
 .ln.old .pri{color:var(--cap-soft);font-weight:600}
 .ln.old.recent .pri{color:var(--cap-mid)}
 .ln.live .pri::after{content:"";display:inline-block;width:.07em;height:.85em;margin-left:.08em;vertical-align:-.08em;background:var(--cap-fg);animation:blink 1s steps(1) infinite}
+.livebit{opacity:.78}
 .sec{display:block;margin-top:.14em;font-size:.62em;font-weight:700;line-height:1.36;color:var(--cap-tr)}
 .ln.old .sec{opacity:.82}
 .sec.pending{color:var(--cap-soft);letter-spacing:.2em}
@@ -407,6 +408,10 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
         </div>
       </div>
       <div class="set-row col">
+        <div class="set-lbl"><b>문단 나누기</b><span>이어서 말하는 동안은 한 문단에 이어 붙이고, 이만큼 쉬면 새 문단을 시작해요</span></div>
+        <div class="seg2" id="gapSeg"></div>
+      </div>
+      <div class="set-row col">
         <div class="set-lbl"><b>말하는 언어</b><span>음성 인식에 쓰는 언어예요</span></div>
         <div class="seg2" id="speechSegB"></div>
       </div>
@@ -546,6 +551,9 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
   let si=store.get('mm.scale2',2); if(!(si>=0&&si<SCALES.length)) si=2;
   let ttsOn=store.get('mm.tts',true)!==false;
   let saveOn=store.get('mm3.save',true)!==false;
+  const GAPS=[{ms:1500,label:'짧게 · 1.5초'},{ms:3000,label:'보통 · 3초'},{ms:6000,label:'길게 · 6초'}];
+  let gapMs=store.get('mm3.gap',3000); if(!GAPS.some(g=>g.ms===gapMs)) gapMs=3000;
+  const MAX_PARA=320;
   let capTheme=store.get('mm2.cap','yellow'); if(!['yellow','white','paper'].includes(capTheme)) capTheme='yellow';
   let custom=arr(store.get('mm.c.theirs',[]));
   let record=loadRecord();
@@ -630,6 +638,8 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
     const L=T[V]||T.ko, items=msgs.slice(-150), out=[];
     if(!items.length&&!live){const d=el('div','ln now');d.append(el('span','pri',L.intro1));out.push(d,el('p','cap-note',L.intro2));return out}
     const lastIdx=items.length-1; let prevT=null;
+    const lastM=items[lastIdx];
+    const attach=!!live&&canJoin(lastM)&&V===lastM.src;
     items.forEach((m,i)=>{
       if(prevT&&m.t-prevT>120000) out.push(el('div','cap-time',fmt(m.t)));
       prevT=m.t;
@@ -641,13 +651,15 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
         out.push(b); return;
       }
       const fromEnd=lastIdx-i;
-      const isNow=!live&&fromEnd===0;
-      const isRecent=fromEnd<(live?2:3);
+      const isNow=fromEnd===0&&(!live||attach);
+      const isRecent=fromEnd<((live&&!attach)?2:3);
       const d=el('div','ln '+(isNow?'now':(isRecent?'old recent':'old')));
-      d.append(el('span','pri',pk.p)); if(sec) d.append(sec);
+      const pri=el('span','pri',pk.p);
+      if(isNow&&attach){d.classList.add('live');pri.append(document.createTextNode(sepFor(m.src)),el('span','livebit',live))}
+      d.append(pri); if(sec) d.append(sec);
       out.push(d);
     });
-    if(live){const d=el('div','ln now live');d.append(el('span','pri',live));out.push(d)}
+    if(live&&!attach){const d=el('div','ln now live');d.append(el('span','pri',live));out.push(d)}
     return out;
   }
   function paint(body,nodes){
@@ -682,11 +694,32 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
   window.addEventListener('pagehide',()=>{if(persistT)persistNow()});
 
   /* ── messages ── */
-  function addMsg(who,text,src){
+  const sepFor=l=>l==='ja'?'':' ';
+  function canJoin(m){
+    return !!m&&m.who==='me'&&m.voice&&m.src===speech&&(Date.now()-m.tEnd)<gapMs&&m.text.length<MAX_PARA;
+  }
+  /* speech: keep adding to the current paragraph until the speaker pauses long enough */
+  function addSpeech(text){
+    text=(text||'').replace(/\s+/g,' ').trim(); if(!text) return;
+    const last=msgs[msgs.length-1];
+    if(canJoin(last)){
+      const prev=last.segs[last.segs.length-1];
+      if(prev&&prev.text===text&&Date.now()-last.tEnd<1500) return;
+      const seg={text}; last.segs.push(seg);
+      last.text=last.text+sepFor(last.src)+text; last.tEnd=Date.now();
+      queueSeg(last,seg);
+      if(saveOn&&record.includes(last)) persistSoon();
+      renderCap(); if(!logSheet.hidden) renderLog();
+      return;
+    }
+    addMsg('me',text,speech,true);
+  }
+  function addMsg(who,text,src,voice){
     text=(text||'').replace(/\s+/g,' ').trim(); if(!text) return;
     const last=msgs[msgs.length-1];
     if(last&&last.who===who&&last.text===text&&Date.now()-last.t<1500) return;
-    const m={id:nextId++,who,text,t:Date.now(),src:src||detect(text)||(who==='me'?speech:readerLang())};
+    const now=Date.now();
+    const m={id:nextId++,who,text,t:now,tEnd:now,voice:!!voice,segs:[{text}],src:src||detect(text)||(who==='me'?speech:readerLang())};
     msgs.push(m);
     const cap=saveOn?400:80; if(msgs.length>cap) msgs.splice(0,msgs.length-cap);
     if(saveOn){record.push(m);if(record.length>3000)record.splice(0,record.length-3000);persistSoon()}
@@ -781,16 +814,25 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
     return await viaMyMemory(text,s,t);
   }
   const trQ=[]; let trBusy=false, trWarnAt=0;
-  function queueTr(m){
+  function queueSeg(m,seg){
     if(!transActive()) return false;
     const tgt=targetFor(m); if(!tgt||tgt===m.src) return false;
-    m.trPending=true; trQ.push({m,tgt}); pump(); return true;
+    if(seg.tr&&seg.trLang===tgt) return false;
+    seg.pending=true; m.trPending=true; trQ.push({m,seg,tgt}); pump(); return true;
+  }
+  function queueTr(m){
+    if(!m.segs) m.segs=[{text:m.text}];
+    let any=false; m.segs.forEach(seg=>{if(queueSeg(m,seg))any=true}); return any;
+  }
+  function joinTr(m){
+    const tgt=m.trLang, parts=m.segs.filter(x=>x.tr&&x.trLang===tgt).map(x=>x.tr);
+    m.tr=parts.join(sepFor(tgt)); m.trPending=m.segs.some(x=>x.pending);
   }
   async function pump(){
     if(trBusy) return; const job=trQ.shift(); if(!job) return; trBusy=true;
-    try{const out=await translateText(job.m.text,job.m.src,job.tgt);job.m.tr=out;job.m.trLang=job.tgt}
+    try{const out=await translateText(job.seg.text,job.m.src,job.tgt);job.seg.tr=out;job.seg.trLang=job.tgt;job.m.trLang=job.tgt}
     catch(e){if(Date.now()-trWarnAt>30000){trWarnAt=Date.now();setStatus(e&&e.code==='quota'?MSG.trQuota:MSG.trNet,'warn')}}
-    job.m.trPending=false; trBusy=false;
+    job.seg.pending=false; joinTr(job.m); trBusy=false;
     if(job.m.speakAfter){job.m.speakAfter=false;speakForMe(job.m)}
     if(job.m.who==='them'&&!replyBanner.hidden&&replyBanner.dataset.id===String(job.m.id)) showBanner(job.m);
     if(saveOn&&record.includes(job.m)) persistSoon();
@@ -836,7 +878,7 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
           const raw=tx;
           if(isAndroid&&lastFinal&&tx.startsWith(lastFinal)) tx=tx.slice(lastFinal.length).trim();
           lastFinal=raw; live='';
-          if(tx) addMsg('me',tx,speech);
+          if(tx) addSpeech(tx);
         }else if(tx){interim+=(interim&&speech!=='ja'?' ':'')+tx}
       }
       setLive(interim);
@@ -1089,6 +1131,9 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
     const b=el('button',null,label); b.type='button'; b.setAttribute('aria-pressed',String(pressed)); b.disabled=!!disabled;
     b.addEventListener('click',fn); return b;
   }
+  function renderGapSeg(){
+    $('gapSeg').replaceChildren(...GAPS.map(g=>segBtn(g.label,gapMs===g.ms,()=>{gapMs=g.ms;store.set('mm3.gap',g.ms);renderGapSeg()})));
+  }
   function renderLangSegs(){
     [['speechSegA','transSegA','transNoteA'],['speechSegB','transSegB','transNoteB']].forEach(([a,b,n])=>{
       $(a).replaceChildren(...Object.keys(LANGS).map(k=>segBtn(LANGS[k].name,speech===k,()=>setSpeech(k))));
@@ -1122,7 +1167,7 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
     trans=k; store.set('mm3.trans',k);
     applyLanguage(); prewarm();
     if(transActive()){
-      msgs.filter(m=>!m.tr&&!m.trPending).slice(-3).forEach(m=>queueTr(m));
+      msgs.filter(m=>!m.trPending&&(!m.tr||m.trLang!==targetFor(m))).slice(-3).forEach(m=>{m.tr='';m.trLang='';(m.segs||[]).forEach(x=>{x.tr='';x.trLang=''});queueTr(m)});
       if(!wantListen) setStatus(LANGS[speech].name+'로 말하면 '+LANGS[trans].name+' 번역이 자막 아래에 함께 나와요.');
     }else if(!wantListen) setStatus('번역 자막을 껐어요.');
   }
@@ -1176,7 +1221,7 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
   document.addEventListener('visibilitychange',()=>{if(document.hidden&&wantListen)stopListen()});
 
   /* init */
-  setTts(ttsOn); setSave(saveOn,false); setCapTheme(capTheme); applyLayout(); applyLanguage(); setScale(si); micUI();
+  renderGapSeg(); setTts(ttsOn); setSave(saveOn,false); setCapTheme(capTheme); applyLayout(); applyLanguage(); setScale(si); micUI();
   if(!SR){setStatus(MSG.unsupported,'warn');openType(false)} else if(fromFile) setStatus(MSG.fileWarn,'warn'); else setStatus(MSG.idle);
 })();
 </script>
