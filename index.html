@@ -160,6 +160,11 @@ button{cursor:pointer;-webkit-tap-highlight-color:transparent;-webkit-touch-call
 .reply-banner.flash{animation:bannerflash 1s ease-out}
 @keyframes bannerflash{from{box-shadow:0 0 0 5px var(--ring)}to{box-shadow:0 0 0 0 transparent}}
 
+.mic-hint{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 10px;align-items:center;background:var(--surface);border:1.5px solid var(--warn);border-radius:16px;padding:10px 12px 10px 14px}
+.mic-hint p{margin:0;font-size:14px;line-height:1.45;word-break:keep-all}
+.mic-hint .acts{display:flex;gap:6px;align-items:center}
+.secondary.sm{height:34px;padding:0 12px;font-size:13.5px}
+.help ol{margin:10px 0 0;padding-left:1.3em;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.5;word-break:keep-all}
 .typerow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
 .field{width:100%;min-width:0;height:52px;border:1.5px solid var(--line);border-radius:14px;background:var(--surface);padding:0 14px;font-size:17px}
 .field:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--ring)}
@@ -339,6 +344,16 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
         </div>
       </div>
 
+      <div class="mic-hint" id="micHint" hidden role="status">
+        <p><b>마이크 허용 창이 매번 뜨나요?</b> 한 번만 설정하면 다음부터 묻지 않아요.</p>
+        <div class="acts">
+          <button type="button" class="secondary sm" id="micHintOpen">방법 보기</button>
+          <button type="button" class="ib sm" id="micHintClose" aria-label="안내 닫기">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+        </div>
+      </div>
+
       <form class="typerow" id="typeRow" hidden>
         <input class="field" id="typeInput" placeholder="입력하거나 키보드 마이크로 받아쓰기" autocomplete="off" enterkeyhint="send" aria-label="자막으로 올릴 글">
         <button type="submit">올리기</button>
@@ -439,11 +454,21 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
       <ul>
         <li>안드로이드·PC는 <b>크롬</b>, 아이폰은 <b>사파리</b>에서 열어 주세요.</li>
         <li>처음 마이크를 누를 때 뜨는 권한 창에서 <b>허용</b>을 눌러 주세요.</li>
-        <li>이미 거부했다면 주소창 왼쪽 아이콘 → 권한(사이트 설정) → 마이크 → 허용.</li>
         <li>https 주소로 열어야 마이크가 켜져요. 저장된 파일이나 다른 앱 안에 띄운 화면에서는 막힐 수 있어요.</li>
         <li>아래쪽 아이콘을 누르면 이름이, <b>길게 누르면 설명</b>이 나와요. 길게 누를 때는 실행되지 않아요.</li>
         <li>마이크가 안 될 때도 키보드 버튼을 누르고, 키보드의 마이크(음성 입력)로 받아쓰기를 할 수 있어요.</li>
       </ul>
+    </div>
+    <div class="help" id="micHelp">
+      <h3>마이크 허용 창이 매번 뜰 때</h3>
+      <p class="set-note">대부분 ‘이번만 허용’으로 되어 있어서 그래요. 아래를 한 번만 바꿔 두면 다음부터 묻지 않아요.</p>
+      <ol>
+        <li>권한 창이 뜨면 <b>‘이번만 허용’ 말고 ‘사이트 방문 시 허용’</b>(또는 ‘허용’)을 누르세요.</li>
+        <li>크롬 주소창 왼쪽 아이콘 → <b>권한 → 마이크</b>를 <b>허용</b>으로 바꿔요. 크롬 메뉴(⋮) → 설정 → 사이트 설정 → 마이크에서 <b id="siteHost">이 사이트</b>를 허용으로 바꿔도 돼요.</li>
+        <li>휴대폰 <b>설정 → 애플리케이션 → Chrome → 권한 → 마이크</b>가 <b>‘매번 확인’</b>이면 <b>‘앱 사용 중에만 허용’</b>으로 바꿔요. 삼성폰에서 자주 생겨요.</li>
+        <li>아이폰은 사파리 주소창 <b>aA → 웹사이트 설정 → 마이크 → 허용</b>, 또는 설정 → 앱 → Safari → 마이크 → 허용으로 바꿔요.</li>
+        <li>시크릿 탭은 닫을 때마다 권한이 초기화돼요. 일반 탭에서 열어 주세요.</li>
+      </ol>
     </div>
   </div>
 </div>
@@ -486,6 +511,7 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
   const ttsToggle=$('ttsToggle'), ttsLabel=$('ttsLabel'), replySend=$('replySend');
   const setSheet=$('setSheet'), setClose=$('setClose'), sizeDown=$('sizeDown'), sizeUp=$('sizeUp'), sizeVal=$('sizeVal'), ttsSet=$('ttsSet'), saveSet=$('saveSet'), emailInput=$('emailInput'), micState=$('micState');
   const swatches=[...document.querySelectorAll('.swatch')];
+  const micHint=$('micHint'), micHintOpen=$('micHintOpen'), micHintClose=$('micHintClose'), micHelp=$('micHelp');
   const logSheet=$('logSheet'), logClose=$('logClose'), logList=$('logList'), logCount=$('logCount'), saveLog=$('saveLog'), copyArea=$('copyArea'), copyBtn=$('copyBtn'), saveBtn=$('saveBtn'), clearBtn=$('clearBtn');
 
   const store={
@@ -870,6 +896,7 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
   function micBlocked(msg){setStatus(msg,'warn');openType(true)}
   function makeRec(){
     const r=new SR(); r.lang=LANGS[speech].sr; r.interimResults=true; r.continuous=true; r.maxAlternatives=1;
+    r.onaudiostart=()=>{if(!store.get('mm3.micOk',false))store.set('mm3.micOk',true)};
     r.onresult=e=>{
       let interim='';
       for(let i=e.resultIndex;i<e.results.length;i++){
@@ -897,9 +924,26 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
     };
     return r;
   }
+  let micHintShown=false;
+  function checkRepeatPrompt(){
+    if(micHintShown||inFrame||fromFile||insecure) return;
+    try{
+      if(!navigator.permissions||!navigator.permissions.query) return;
+      navigator.permissions.query({name:'microphone'}).then(st=>{
+        if(st.state==='prompt'&&store.get('mm3.micOk',false)&&!micHintShown){micHintShown=true;micHint.hidden=false}
+      }).catch(()=>{});
+    }catch(e){}
+  }
+  function openMicHelp(){
+    micHint.hidden=true; refreshMicState(); emailInput.value=email; openSheet(setSheet,setClose);
+    setTimeout(()=>{try{micHelp.scrollIntoView({block:'start',behavior:'smooth'})}catch(e){micHelp.scrollIntoView()}},120);
+  }
+  micHintOpen.addEventListener('click',openMicHelp);
+  micHintClose.addEventListener('click',()=>{micHint.hidden=true});
   function startListen(){
     if(!SR){micBlocked(MSG.unsupported);return}
     if(frameBlocked){micBlocked(MSG.frame);return}
+    checkRepeatPrompt();
     try{
       rec=makeRec(); lastFinal=''; rec.start(); wantListen=true; ttsPause=false; micUI();
       setStatus(MSG.listen,'on');
@@ -1098,6 +1142,7 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
     try{if(navigator.permissions&&navigator.permissions.query){st=(await navigator.permissions.query({name:'microphone'})).state}}catch(e){}
     if(st==='granted') say('마이크 허용됨 · 바로 쓸 수 있어요.','ok');
     else if(st==='denied') say('마이크가 거부되어 있어요. 아래 방법으로 허용해 주세요.','warn');
+    else if(store.get('mm3.micOk',false)) say('허용이 저장되지 않아서 누를 때마다 물어봐요. 아래 ‘허용 창이 매번 뜰 때’를 따라 해 주세요.','warn');
     else say('마이크를 처음 누를 때 권한을 물어봐요.');
   }
   setBtn.addEventListener('click',()=>{refreshMicState();emailInput.value=email;openSheet(setSheet,setClose)});
@@ -1221,6 +1266,7 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
   document.addEventListener('visibilitychange',()=>{if(document.hidden&&wantListen)stopListen()});
 
   /* init */
+  try{if(location.host)$('siteHost').textContent=location.host}catch(e){}
   renderGapSeg(); setTts(ttsOn); setSave(saveOn,false); setCapTheme(capTheme); applyLayout(); applyLanguage(); setScale(si); micUI();
   if(!SR){setStatus(MSG.unsupported,'warn');openType(false)} else if(fromFile) setStatus(MSG.fileWarn,'warn'); else setStatus(MSG.idle);
 })();
