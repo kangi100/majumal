@@ -58,7 +58,17 @@ button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 /* ── 자막 화면 ── */
 .cap{flex:1 1 auto;min-height:0;display:flex;background:var(--cap-bg);color:var(--cap-fg);
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 16px}
-.app[data-rot="on"] .cap{transform:rotate(180deg)}
+/* 화면 배치: normal(한 화면) · split(위아래 나눔, 위쪽은 상대방 쪽으로 뒤집힘) · flip(전체 뒤집기) */
+.cap-mine{display:none;border-top:3px solid var(--cap-ui)}
+.app[data-layout="split"] .cap-mine{display:flex}
+.app[data-layout="split"] .cap-partner,.app[data-layout="flip"] .cap-partner{transform:rotate(180deg)}
+.app[data-layout="split"] .cap{flex:1 1 0;padding-block:10px 12px}
+.app[data-layout="split"] .cap-now{font-size:calc(var(--scale)*clamp(24px,6.2vw,54px))}
+.app[data-layout="split"] .cap-old{font-size:calc(var(--scale)*clamp(16px,4vw,28px))}
+.app[data-layout="split"] .cap-note{font-size:calc(var(--scale)*clamp(14px,3.4vw,20px))}
+.app[data-layout="split"] .cap-reply .txt{font-size:calc(var(--scale)*clamp(18px,4.4vw,30px))}
+.app[data-layout="split"] .cap-top{min-height:38px}
+.app[data-layout="split"] .cap-btn{height:38px}
 .cap-in{width:100%;max-width:980px;margin-inline:auto;display:flex;flex-direction:column;gap:10px;min-height:0}
 .cap-top{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px}
 .cap-state{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 13px;border-radius:16px;background:var(--cap-ui);color:var(--cap-ui-fg);font-size:13.5px;font-weight:600;flex:none}
@@ -77,13 +87,13 @@ button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 .cap-now.live::after{content:"";display:inline-block;width:.07em;height:.85em;margin-left:.08em;vertical-align:-.08em;background:var(--cap-fg);animation:blink 1s steps(1) infinite}
 .cap-note{color:var(--cap-soft);font-weight:600;font-size:calc(var(--scale)*clamp(16px,3.6vw,24px));line-height:1.45;max-width:30em}
 .cap-time{align-self:center;margin-block:.5em .2em;padding:2px 10px;border-radius:10px;background:var(--cap-ui);color:var(--cap-ui-fg);font-family:var(--font-ui);font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
-.cap-reply{align-self:flex-end;max-width:88%;margin-block:.25em;padding:.45em .7em .55em;border-radius:14px;background:var(--cap-reply-bg);border:1.5px solid var(--cap-reply);color:var(--cap-reply)}
+.cap-reply{align-self:flex-end;max-width:88%;margin-block:.25em;padding:.45em .7em .55em;border-radius:14px;background:var(--cap-reply-bg);border:1.5px solid var(--cap-reply);color:var(--cap-reply);text-align:left;font-family:var(--font-cap);cursor:pointer}
 .cap-reply-tag{display:block;font-family:var(--font-ui);font-size:12px;font-weight:700;letter-spacing:.06em;opacity:.85}
-.cap-reply p{font-weight:800;font-size:calc(var(--scale)*clamp(20px,5vw,36px));line-height:1.28}
+.cap-reply .txt{display:block;font-weight:800;font-size:calc(var(--scale)*clamp(20px,5vw,36px));line-height:1.28}
 @keyframes blink{50%{opacity:0}}
 
 /* ── 조작 영역 (내 쪽) ── */
-.ctl{flex:0 0 auto;background:var(--bg);border-top:1px solid var(--line);
+.ctl{position:relative;flex:0 0 auto;background:var(--bg);border-top:1px solid var(--line);
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px 12px}
 .ctl-in{max-width:980px;margin-inline:auto;display:flex;flex-direction:column;gap:10px}
 .bar{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -98,6 +108,15 @@ button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 .ib.sm svg{width:18px;height:18px}
 @media (max-width:430px){.brand small{display:none}}
 
+.app:not([data-layout="flip"]) .reply-banner{display:none}
+.ib svg.phone{width:17px;height:23px}
+.layout-menu{position:absolute;z-index:20;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(100% - 4px);width:min(330px,calc(100% - 32px));
+  display:flex;flex-direction:column;gap:2px;padding:6px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:0 12px 32px var(--shadow)}
+.layout-menu button{display:grid;grid-template-columns:34px minmax(0,1fr);align-items:center;gap:10px;padding:8px 10px;border:1.5px solid transparent;border-radius:12px;background:transparent;text-align:left}
+.layout-menu button[aria-checked="true"]{border-color:var(--accent);background:var(--chip)}
+.layout-menu svg{width:22px;height:30px;justify-self:center}
+.layout-menu b{display:block;font-weight:700;font-size:15px}
+.layout-menu small{display:block;font-size:12.5px;color:var(--muted);line-height:1.4}
 .reply-banner{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:start;background:var(--surface);border:1.5px solid var(--accent);border-radius:16px;padding:10px 12px 12px 16px}
 .reply-banner .who{grid-column:1;font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--accent)}
 .reply-banner p{grid-column:1;margin:0;font-weight:700;font-size:calc(var(--scale)*clamp(19px,4.6vw,30px));line-height:1.3;word-break:keep-all;overflow-wrap:anywhere;max-height:30vh;overflow-y:auto}
@@ -205,8 +224,8 @@ select.ib{padding:0 8px}
 </style>
 </head>
 <body>
-<div class="app" id="app" data-rot="off">
-  <section class="cap" id="capPane" aria-label="자막 화면">
+<div class="app" id="app" data-layout="normal">
+  <section class="cap cap-partner" id="capPane" aria-label="자막 화면">
     <div class="cap-in">
       <div class="cap-top">
         <span class="cap-state" id="capState"><i></i><span id="capStateLabel">대기 중</span></span>
@@ -218,17 +237,23 @@ select.ib{padding:0 8px}
       <div class="cap-body" id="capBody" aria-live="polite"></div>
     </div>
   </section>
+  <section class="cap cap-mine" id="capMine" aria-label="내 쪽 자막">
+    <div class="cap-in"><div class="cap-body" id="capBody2"></div></div>
+  </section>
 
   <section class="ctl" aria-label="조작">
+  <div class="layout-menu" id="layoutMenu" role="menu" aria-label="화면 배치" hidden>
+    <button type="button" role="menuitemradio" data-layout="normal" aria-checked="true"><svg viewBox="0 0 24 32" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="1.5" width="18" height="29" rx="3.5"/><text x="12" y="19.8" text-anchor="middle" font-size="9.5" font-weight="700" fill="currentColor" stroke="none">가</text></svg><span><b>한 화면</b><small>자막 전체가 내 쪽을 향해요</small></span></button>
+    <button type="button" role="menuitemradio" data-layout="split" aria-checked="false"><svg viewBox="0 0 24 32" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="1.5" width="18" height="29" rx="3.5"/><path d="M3 16h18"/><text x="12" y="12.4" text-anchor="middle" font-size="8.5" font-weight="700" fill="currentColor" stroke="none" transform="rotate(180 12 9)">가</text><text x="12" y="26.4" text-anchor="middle" font-size="8.5" font-weight="700" fill="currentColor" stroke="none">가</text></svg><span><b>위아래 나눔</b><small>위쪽은 상대방 쪽으로 뒤집히고, 아래쪽은 내가 봐요</small></span></button>
+    <button type="button" role="menuitemradio" data-layout="flip" aria-checked="false"><svg viewBox="0 0 24 32" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="1.5" width="18" height="29" rx="3.5"/><text x="12" y="19.8" text-anchor="middle" font-size="9.5" font-weight="700" fill="currentColor" stroke="none" transform="rotate(180 12 16.3)">가</text></svg><span><b>전체 뒤집기</b><small>자막 전체가 상대방 쪽을 향해요</small></span></button>
+  </div>
     <div class="ctl-in">
       <div class="bar">
         <span class="brand">마주말 <small>실시간 자막</small></span>
         <div class="bar-r">
           <button type="button" class="ib" id="sizeDownQ" aria-label="자막 글자 작게">가−</button>
           <button type="button" class="ib" id="sizeUpQ" aria-label="자막 글자 크게">가+</button>
-          <button type="button" class="ib" id="rotBtn" aria-pressed="false" aria-label="자막 화면을 상대 쪽으로 뒤집기" title="자막 화면 뒤집기">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 0 1 14.6-5.9L20.5 8.5"/><path d="M20.5 3.5v5h-5"/><path d="M20.5 12a8.5 8.5 0 0 1-14.6 5.9L3.5 15.5"/><path d="M3.5 20.5v-5h5"/></svg>
-          </button>
+          <button type="button" class="ib" id="layoutBtn" aria-haspopup="true" aria-expanded="false" aria-controls="layoutMenu" aria-label="화면 배치" title="화면 배치"><svg class="phone" viewBox="0 0 24 32" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="1.5" width="18" height="29" rx="3.5"/><text x="12" y="19.8" text-anchor="middle" font-size="9.5" font-weight="700" fill="currentColor" stroke="none">가</text></svg></button>
           <button type="button" class="ib" id="logBtn" aria-label="자막 기록" title="자막 기록">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
           </button>
@@ -368,9 +393,9 @@ select.ib{padding:0 8px}
 (function(){
   const $=id=>document.getElementById(id);
   const root=document.documentElement;
-  const app=$('app'), capPane=$('capPane'), capBody=$('capBody'), capState=$('capState'), capStateLabel=$('capStateLabel');
+  const app=$('app'), capPane=$('capPane'), capBody=$('capBody'), capBody2=$('capBody2'), capState=$('capState'), capStateLabel=$('capStateLabel');
   const replyBtn=$('replyBtn'), replyBtnLabel=$('replyBtnLabel');
-  const sizeDownQ=$('sizeDownQ'), sizeUpQ=$('sizeUpQ'), rotBtn=$('rotBtn'), logBtn=$('logBtn'), setBtn=$('setBtn');
+  const sizeDownQ=$('sizeDownQ'), sizeUpQ=$('sizeUpQ'), layoutBtn=$('layoutBtn'), layoutMenu=$('layoutMenu'), logBtn=$('logBtn'), setBtn=$('setBtn');
   const replyBanner=$('replyBanner'), replyBannerText=$('replyBannerText'), replayBtn=$('replayBtn'), bannerClose=$('bannerClose');
   const typeRow=$('typeRow'), typeInput=$('typeInput'), kbBtn=$('kbBtn'), micBtn=$('micBtn'), micLabel=$('micLabel'), statusEl=$('statusEl');
   const replySheet=$('replySheet'), replyTitle=$('replyTitle'), replyClose=$('replyClose'), replyHint=$('replyHint');
@@ -425,7 +450,8 @@ select.ib{padding:0 8px}
 
   const arr=v=>Array.isArray(v)?v.filter(x=>typeof x==='string'&&x.trim()).slice(0,30):[];
   let lang=store.get('mm.lang','ko-KR'); if(!T[lang]) lang='ko-KR';
-  let rotOn=store.get('mm2.rot',false)===true;
+  let layout=store.get('mm2.layout',null);
+  if(!['normal','split','flip'].includes(layout)) layout=store.get('mm2.rot',false)===true?'flip':'normal';
   let si=store.get('mm.scale2',2); if(!(si>=0&&si<SCALES.length)) si=2;
   let ttsOn=store.get('mm.tts',true)!==false;
   let capTheme=store.get('mm2.cap','yellow'); if(!['yellow','white','paper'].includes(capTheme)) capTheme='yellow';
@@ -437,31 +463,40 @@ select.ib{padding:0 8px}
   function setStatus(text,cls){statusEl.textContent=text;statusEl.className='status'+(cls?' '+cls:'')}
 
   /* ── transcript ── */
-  function renderCap(){
-    const L=T[lang];
-    const items=msgs.slice(-150);
-    const prevTop=capBody.scrollTop;
-    const atBottom=capBody.scrollHeight-capBody.scrollTop-capBody.clientHeight<80;
-    capBody.textContent='';
-    if(!items.length&&!live){
-      capBody.append(el('p','cap-now',L.intro1),el('p','cap-note',L.intro2));
-    }else{
-      const lastIdx=items.length-1; let prevT=null;
-      items.forEach((m,i)=>{
-        if(prevT&&m.t-prevT>120000) capBody.append(el('div','cap-time',fmt(m.t)));
-        prevT=m.t;
-        if(m.who==='them'){
-          const d=el('div','cap-reply'); d.append(el('span','cap-reply-tag',L.replyTag),el('p',null,m.text));
-          capBody.append(d); return;
-        }
-        const fromEnd=lastIdx-i;
-        if(!live&&fromEnd===0) capBody.append(el('p','cap-now',m.text));
-        else capBody.append(el('p','cap-old'+(fromEnd<(live?2:3)?' recent':''),m.text));
-      });
-      if(live) capBody.append(el('p','cap-now live',live));
-    }
-    capBody.scrollTop=atBottom?capBody.scrollHeight:prevTop;
+  function buildCap(){
+    const L=T[lang], items=msgs.slice(-150), out=[];
+    if(!items.length&&!live){out.push(el('p','cap-now',L.intro1),el('p','cap-note',L.intro2));return out}
+    const lastIdx=items.length-1; let prevT=null;
+    items.forEach((m,i)=>{
+      if(prevT&&m.t-prevT>120000) out.push(el('div','cap-time',fmt(m.t)));
+      prevT=m.t;
+      if(m.who==='them'){
+        const b=el('button','cap-reply'); b.type='button'; b.dataset.say=m.text;
+        b.setAttribute('aria-label',L.replyTag+': '+m.text);
+        b.append(el('span','cap-reply-tag',L.replyTag),el('span','txt',m.text));
+        out.push(b); return;
+      }
+      const fromEnd=lastIdx-i;
+      if(!live&&fromEnd===0) out.push(el('p','cap-now',m.text));
+      else out.push(el('p','cap-old'+(fromEnd<(live?2:3)?' recent':''),m.text));
+    });
+    if(live) out.push(el('p','cap-now live',live));
+    return out;
   }
+  function paint(body,nodes){
+    const prevTop=body.scrollTop;
+    const atBottom=body.scrollHeight-body.scrollTop-body.clientHeight<80;
+    body.replaceChildren(...nodes);
+    body.scrollTop=atBottom?body.scrollHeight:prevTop;
+  }
+  function renderCap(){
+    const nodes=buildCap();
+    paint(capBody,nodes);
+    if(layout==='split') paint(capBody2,nodes.map(n=>n.cloneNode(true)));
+  }
+  [capBody,capBody2].forEach(body=>body.addEventListener('click',e=>{
+    const r=e.target.closest('.cap-reply'); if(r&&r.dataset.say) speak(r.dataset.say);
+  }));
   function addMsg(who,text){
     text=(text||'').replace(/\s+/g,' ').trim(); if(!text) return;
     const last=msgs[msgs.length-1];
@@ -726,8 +761,24 @@ select.ib{padding:0 8px}
   }
   swatches.forEach(s=>s.addEventListener('click',()=>setCapTheme(s.dataset.cap)));
 
-  function applyRot(){app.dataset.rot=rotOn?'on':'off';rotBtn.setAttribute('aria-pressed',String(rotOn))}
-  rotBtn.addEventListener('click',()=>{rotOn=!rotOn;store.set('mm2.rot',rotOn);applyRot()});
+  const LAYOUT_SVG={normal:'<rect x="3" y="1.5" width="18" height="29" rx="3.5"/><text x="12" y="19.8" text-anchor="middle" font-size="9.5" font-weight="700" fill="currentColor" stroke="none">가</text>',split:'<rect x="3" y="1.5" width="18" height="29" rx="3.5"/><path d="M3 16h18"/><text x="12" y="12.4" text-anchor="middle" font-size="8.5" font-weight="700" fill="currentColor" stroke="none" transform="rotate(180 12 9)">가</text><text x="12" y="26.4" text-anchor="middle" font-size="8.5" font-weight="700" fill="currentColor" stroke="none">가</text>',flip:'<rect x="3" y="1.5" width="18" height="29" rx="3.5"/><text x="12" y="19.8" text-anchor="middle" font-size="9.5" font-weight="700" fill="currentColor" stroke="none" transform="rotate(180 12 16.3)">가</text>'};
+  const LAYOUT_HINT={normal:'',split:'휴대폰을 둘 사이에 눕혀 두세요. 위쪽은 상대방이, 아래쪽은 내가 읽어요.',flip:'자막 전체가 상대방 쪽으로 뒤집혔어요. 상대방 답장은 아래 카드로 보여요.'};
+  const layoutItems=[...layoutMenu.querySelectorAll('[data-layout]')];
+  function applyLayout(){
+    app.dataset.layout=layout;
+    layoutBtn.querySelector('svg').innerHTML=LAYOUT_SVG[layout];
+    layoutItems.forEach(b=>b.setAttribute('aria-checked',String(b.dataset.layout===layout)));
+    if(layout==='split') capBody2.scrollTop=capBody2.scrollHeight;
+    renderCap();
+  }
+  function openMenu(){layoutMenu.hidden=false;layoutBtn.setAttribute('aria-expanded','true');(layoutMenu.querySelector('[aria-checked="true"]')||layoutItems[0]).focus()}
+  function closeMenu(refocus){if(layoutMenu.hidden)return;layoutMenu.hidden=true;layoutBtn.setAttribute('aria-expanded','false');if(refocus)layoutBtn.focus()}
+  layoutBtn.addEventListener('click',()=>{if(layoutMenu.hidden)openMenu();else closeMenu()});
+  layoutItems.forEach(b=>b.addEventListener('click',()=>{
+    layout=b.dataset.layout; store.set('mm2.layout',layout); applyLayout(); closeMenu(true);
+    if(!wantListen&&LAYOUT_HINT[layout]) setStatus(LAYOUT_HINT[layout]);
+  }));
+  document.addEventListener('pointerdown',e=>{if(!layoutMenu.hidden&&!layoutMenu.contains(e.target)&&!layoutBtn.contains(e.target))closeMenu()});
 
   function applyLang(){
     const L=T[lang]; langSel.value=lang;
@@ -746,6 +797,7 @@ select.ib{padding:0 8px}
 
   document.addEventListener('keydown',e=>{
     if(e.key!=='Escape') return;
+    if(!layoutMenu.hidden){closeMenu(true);return}
     [replySheet,setSheet,logSheet].some(s=>{if(!s.hidden){closeSheet(s);return true}return false});
   });
 
@@ -761,7 +813,7 @@ select.ib{padding:0 8px}
   document.addEventListener('visibilitychange',()=>{if(document.hidden&&wantListen)stopListen()});
 
   /* init */
-  setTts(ttsOn); setCapTheme(capTheme); applyRot(); applyLang(); setScale(si); micUI();
+  setTts(ttsOn); setCapTheme(capTheme); applyLayout(); applyLang(); setScale(si); micUI();
   if(!SR){setStatus(MSG.unsupported,'warn');openType(false)} else if(fromFile) setStatus(MSG.fileWarn,'warn'); else setStatus(MSG.idle);
 })();
 </script>
