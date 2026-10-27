@@ -165,6 +165,19 @@ button{cursor:pointer;-webkit-tap-highlight-color:transparent;-webkit-touch-call
 .mic-hint .acts{display:flex;gap:6px;align-items:center}
 .secondary.sm{height:34px;padding:0 12px;font-size:13.5px}
 .help ol{margin:10px 0 0;padding-left:1.3em;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.5;word-break:keep-all}
+.undo-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface);border:1.5px solid var(--accent);border-radius:14px;padding:8px 8px 8px 14px}
+.undo-bar span{min-width:0;font-size:14px;line-height:1.4;word-break:keep-all}
+.undo-bar .secondary{flex:none;white-space:nowrap}
+.eng-box{display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+.eng-box label{font-weight:600;font-size:14.5px}
+.eng-box a,.set-note a{color:var(--accent);font-weight:600}
+.set-note.warn{color:var(--warn)}
+.eng-test{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.eng-out{flex:1;min-width:12em;font-size:14px;line-height:1.45;word-break:keep-all}
+.eng-out.ok{color:var(--ok)}
+.eng-out.warn{color:var(--warn)}
+.field.area{height:auto;min-height:5.5em;padding:10px 14px;font-size:15px;line-height:1.5;resize:vertical}
+.pend{opacity:.55;letter-spacing:.12em}
 .typerow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
 .field{width:100%;min-width:0;height:52px;border:1.5px solid var(--line);border-radius:14px;background:var(--surface);padding:0 14px;font-size:17px}
 .field:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--ring)}
@@ -359,6 +372,11 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
         <button type="submit">올리기</button>
       </form>
 
+      <div class="undo-bar" id="undoBar" hidden role="status">
+        <span>자막을 지웠어요. 저장된 기록은 그대로 남아 있어요.</span>
+        <button type="button" class="secondary sm" id="undoBtn">되돌리기</button>
+      </div>
+
       <div class="main-row">
         <button type="button" class="kb" id="kbBtn" aria-pressed="false" aria-label="글로 써서 올리기">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg>
@@ -366,6 +384,9 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
         <button type="button" class="bigmic" id="micBtn" aria-pressed="false">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>
           <span id="micLabel">듣기 시작</span>
+        </button>
+        <button type="button" class="kb" id="resetBtn" aria-label="자막 초기화">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20H9.5L4.6 15.1a2 2 0 0 1 0-2.8l8.5-8.5a2 2 0 0 1 2.8 0l4.3 4.3a2 2 0 0 1 0 2.8L12.9 18.2"/><path d="M8.5 9.5l6 6"/></svg>
         </button>
       </div>
       <p class="status" id="statusEl" aria-live="polite"></p>
@@ -436,8 +457,33 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
         <p class="set-note" id="transNoteB"></p>
       </div>
       <div class="set-row col">
-        <label class="set-lbl" for="emailInput"><b>번역용 이메일 (선택)</b><span>휴대폰의 인터넷 번역은 하루 5,000자까지 무료예요. 이메일을 넣으면 하루 50,000자로 늘어나요. 이메일은 번역 요청과 함께 번역 서비스(MyMemory)에 전달돼요.</span></label>
-        <input class="field" id="emailInput" type="email" inputmode="email" autocomplete="email" placeholder="name@example.com">
+        <div class="set-lbl"><b>번역 엔진</b><span>AI 번역은 앞뒤 말을 함께 보고, 음성 인식이 잘못 들은 부분까지 문맥으로 고쳐서 자연스러운 문장으로 번역해요.</span></div>
+        <div class="seg2" id="engineSeg"></div>
+        <div class="eng-box" id="engBasic">
+          <label for="emailInput">번역용 이메일 (선택)</label>
+          <input class="field" id="emailInput" type="email" inputmode="email" autocomplete="email" placeholder="name@example.com">
+          <p class="set-note">기본 번역은 PC 크롬에서는 기기 안 번역, 휴대폰에서는 인터넷 번역(MyMemory)을 써요. MyMemory는 하루 5,000자까지 무료이고, 이메일을 넣으면 50,000자로 늘어나요. 품질은 AI 번역보다 낮아요.</p>
+        </div>
+        <div class="eng-box" id="engGemini" hidden>
+          <label for="geminiKey">Gemini API 키</label>
+          <input class="field" id="geminiKey" type="password" autocomplete="off" spellcheck="false" placeholder="AIza로 시작하는 키">
+          <p class="set-note">Google AI Studio에서 Google 계정으로 로그인 → <b>Get API key</b> → <b>Create API key</b>를 누르면 바로 나와요. 카드 등록 없이 무료예요. <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">키 발급 페이지 열기</a></p>
+          <p class="set-note warn">무료로 쓰면 Google이 입력 내용을 서비스 개선에 쓰고 사람이 검토할 수도 있어요. 진료·상담처럼 민감한 대화에는 Claude AI나 기본 번역을 쓰세요.</p>
+        </div>
+        <div class="eng-box" id="engClaude" hidden>
+          <label for="claudeKey">Claude API 키</label>
+          <input class="field" id="claudeKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-로 시작하는 키">
+          <p class="set-note">Claude Console에서 결제 수단을 등록하고 키를 만들어요. 쓴 만큼 요금이 나가요. Claude 앱 구독과는 별도예요. <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">키 발급 페이지 열기</a></p>
+        </div>
+        <div class="eng-test">
+          <button type="button" class="secondary sm" id="engTest">번역 시험하기</button>
+          <span class="eng-out" id="engOut" aria-live="polite"></span>
+        </div>
+        <p class="set-note">API 키는 이 기기에만 저장되고, 번역할 때 해당 회사에만 보내져요.</p>
+      </div>
+      <div class="set-row col">
+        <label class="set-lbl" for="glossInput"><b>번역 용어집 (AI 번역용)</b><span>이름·전문 용어를 한 줄에 하나씩 적어 두면 그대로 번역해요.</span></label>
+        <textarea class="field area" id="glossInput" rows="3" spellcheck="false" placeholder="생도 = cadet&#10;육군사관학교 = Korea Military Academy"></textarea>
       </div>
       <div class="set-row">
         <label class="set-lbl" for="ttsSet"><b>답장 소리로 읽기</b><span>상대방이 쓴 답장을 소리 내어 읽어 줘요</span></label>
@@ -511,6 +557,8 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
   const ttsToggle=$('ttsToggle'), ttsLabel=$('ttsLabel'), replySend=$('replySend');
   const setSheet=$('setSheet'), setClose=$('setClose'), sizeDown=$('sizeDown'), sizeUp=$('sizeUp'), sizeVal=$('sizeVal'), ttsSet=$('ttsSet'), saveSet=$('saveSet'), emailInput=$('emailInput'), micState=$('micState');
   const swatches=[...document.querySelectorAll('.swatch')];
+  const resetBtn=$('resetBtn'), undoBar=$('undoBar'), undoBtn=$('undoBtn');
+  const engineSeg=$('engineSeg'), engBasic=$('engBasic'), engGemini=$('engGemini'), engClaude=$('engClaude'), geminiKeyIn=$('geminiKey'), claudeKeyIn=$('claudeKey'), engTest=$('engTest'), engOut=$('engOut'), glossInput=$('glossInput');
   const micHint=$('micHint'), micHintOpen=$('micHintOpen'), micHintClose=$('micHintClose'), micHelp=$('micHelp');
   const logSheet=$('logSheet'), logClose=$('logClose'), logList=$('logList'), logCount=$('logCount'), saveLog=$('saveLog'), copyArea=$('copyArea'), copyBtn=$('copyBtn'), saveBtn=$('saveBtn'), clearBtn=$('clearBtn');
 
@@ -572,6 +620,9 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
   if(!LANGS[speech]) speech=store.get('mm.lang','ko-KR')==='en-US'?'en':'ko';
   let trans=store.get('mm3.trans','off'); if(trans!=='off'&&!LANGS[trans]) trans='off';
   let email=String(store.get('mm3.email','')||'');
+  let engine=store.get('mm4.engine','basic'); if(!['basic','gemini','claude'].includes(engine)) engine='basic';
+  let geminiKey=String(store.get('mm4.gkey','')||''), claudeKey=String(store.get('mm4.ckey','')||'');
+  let gloss=String(store.get('mm4.gloss','')||'');
   let layout=store.get('mm2.layout',null);
   if(!['normal','split','flip'].includes(layout)) layout=store.get('mm2.rot',false)===true?'flip':'normal';
   let si=store.get('mm.scale2',2); if(!(si>=0&&si<SCALES.length)) si=2;
@@ -607,6 +658,7 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
     replyBtn:{name:'글로 답하기',desc:'상대방이 글로 답을 써요. 보내면 자막에 표시되고 소리로도 읽어 줘요.',
       en:{name:'Write a reply',desc:'Type your answer. It appears in the captions and is read aloud.'},
       ja:{name:'文字で返事',desc:'文字で返事を書きます。送ると字幕に表示され、読み上げられます。'}},
+    resetBtn:{name:'자막 초기화',desc:'화면의 자막을 모두 지우고 새로 시작해요. 저장된 기록은 그대로 남아요. 실수로 눌렀다면 바로 ‘되돌리기’를 누르세요.'},
     replayBtn:{name:'답장 다시 듣기',desc:'상대방 답장을 소리로 다시 읽어 줘요.',tap:()=>'답장 다시 듣기'},
     bannerClose:{name:'답장 카드 닫기',desc:'아래 답장 카드를 닫아요. 답장은 자막에 남아 있어요.'}
   };
@@ -650,16 +702,18 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
 
   /* ── transcript ── */
   function pick(m,V){
-    if(!transActive()) return {p:m.text,s:'',sl:'',pending:false};
-    if(m.src!==V&&m.tr&&m.trLang===V) return {p:m.tr,s:m.text,sl:m.src};
-    return {p:m.text,s:m.tr||'',sl:m.trLang||'',pending:!!m.trPending&&m.src!==V};
+    if(!transActive()) return {p:m.text,s:'',sl:'',pending:false,pp:false};
+    const busy=!!m.trPending;
+    if(m.src!==V&&m.tr&&m.trLang===V) return {p:m.tr,s:m.text,sl:m.src,pending:false,pp:busy};
+    return {p:m.text,s:m.tr||'',sl:m.trLang||'',pending:busy&&m.src!==V,pp:false};
   }
   function secEl(pk){
     if(!transActive()) return null;
-    if(pk.s){const s=el('span','sec');s.append(el('span','lt',LANGS[pk.sl]?LANGS[pk.sl].tag:''),document.createTextNode(pk.s));return s}
+    if(pk.s){const s=el('span','sec');s.append(el('span','lt',LANGS[pk.sl]?LANGS[pk.sl].tag:''),document.createTextNode(pk.s));if(pk.pending)s.append(el('span','pend',' ···'));return s}
     if(pk.pending) return el('span','sec pending','···');
     return null;
   }
+  function priEl(pk){const e=el('span','pri',pk.p);if(pk.pp)e.append(el('span','pend',' ···'));return e}
   function buildCap(V){
     const L=T[V]||T.ko, items=msgs.slice(-150), out=[];
     if(!items.length&&!live){const d=el('div','ln now');d.append(el('span','pri',L.intro1));out.push(d,el('p','cap-note',L.intro2));return out}
@@ -673,14 +727,15 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
       if(m.who==='them'){
         const b=el('button','cap-reply'); b.type='button'; b.dataset.id=String(m.id);
         b.setAttribute('aria-label',L.replyTag+': '+pk.p);
-        b.append(el('span','cap-reply-tag',L.replyTag),el('span','txt',pk.p)); if(sec) b.append(sec);
+        const tx=el('span','txt',pk.p); if(pk.pp) tx.append(el('span','pend',' ···'));
+        b.append(el('span','cap-reply-tag',L.replyTag),tx); if(sec) b.append(sec);
         out.push(b); return;
       }
       const fromEnd=lastIdx-i;
       const isNow=fromEnd===0&&(!live||attach);
       const isRecent=fromEnd<((live&&!attach)?2:3);
       const d=el('div','ln '+(isNow?'now':(isRecent?'old recent':'old')));
-      const pri=el('span','pri',pk.p);
+      const pri=priEl(pk);
       if(isNow&&attach){d.classList.add('live');pri.append(document.createTextNode(sepFor(m.src)),el('span','livebit',live))}
       d.append(pri); if(sec) d.append(sec);
       out.push(d);
@@ -733,7 +788,7 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
       if(prev&&prev.text===text&&Date.now()-last.tEnd<1500) return;
       const seg={text}; last.segs.push(seg);
       last.text=last.text+sepFor(last.src)+text; last.tEnd=Date.now();
-      queueSeg(last,seg);
+      scheduleTr(last,trDelay(last));
       if(saveOn&&record.includes(last)) persistSoon();
       renderCap(); if(!logSheet.hidden) renderLog();
       return;
@@ -749,7 +804,7 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
     msgs.push(m);
     const cap=saveOn?400:80; if(msgs.length>cap) msgs.splice(0,msgs.length-cap);
     if(saveOn){record.push(m);if(record.length>3000)record.splice(0,record.length-3000);persistSoon()}
-    const waiting=queueTr(m);
+    const waiting=scheduleTr(m,m.voice?trDelay(m):0);
     if(who==='them'){
       showBanner(m);
       if(ttsOn){if(waiting) m.speakAfter=true; else speakForMe(m)}
@@ -766,7 +821,7 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
     replyBanner.classList.remove('flash'); void replyBanner.offsetWidth; replyBanner.classList.add('flash');
   }
 
-  /* ── translation: Chrome's on-device translator on PC, MyMemory over the internet elsewhere ── */
+  /* ── translation: AI (Gemini / Claude, with context) or basic (Chrome on-device on PC, MyMemory elsewhere) ── */
   function detect(t){
     if(/[぀-ヿ]/.test(t)) return 'ja';
     if(/[가-힣ᄀ-ᇿ㄰-㆏]/.test(t)) return 'ko';
@@ -794,25 +849,28 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
     return out;
   }
   const decoder=document.createElement('textarea');
-  function decodeEntities(s){decoder.innerHTML=s;return decoder.value}
+  function decodeEntities(x){decoder.innerHTML=x;return decoder.value}
+  const LNAME={ko:'Korean',en:'English',ja:'Japanese'};
+
+  /* basic engine 1: Chrome's on-device translator (PC Chrome only) */
   const trCache={}, trLoading={};
   const withTimeout=(p,ms)=>Promise.race([p,new Promise(r=>setTimeout(()=>r(null),ms))]);
-  function startCreate(s,t,key){
+  function startCreate(sl,tl,key){
     if(trLoading[key]) return;
-    trLoading[key]=self.Translator.create({sourceLanguage:s,targetLanguage:t,monitor(mo){mo.addEventListener('downloadprogress',e=>setStatus('번역 언어 파일 내려받는 중… '+Math.round((e.loaded||0)*100)+'%'))}})
+    trLoading[key]=self.Translator.create({sourceLanguage:sl,targetLanguage:tl,monitor(mo){mo.addEventListener('downloadprogress',e=>setStatus('번역 언어 파일 내려받는 중… '+Math.round((e.loaded||0)*100)+'%'))}})
       .then(tr=>{trCache[key]=tr}).catch(()=>{trCache[key]=false}).finally(()=>{trLoading[key]=null});
   }
-  async function viaChrome(text,s,t){
+  async function viaChrome(text,sl,tl){
     if(!HAS_TR) return null;
-    const key=s+'>'+t;
+    const key=sl+'>'+tl;
     if(trCache[key]===false) return null;
     try{
       if(!trCache[key]){
-        const av=await withTimeout(self.Translator.availability({sourceLanguage:s,targetLanguage:t}),3000);
-        if(av==='unavailable'||av===null){trCache[key]=false;return null}   /* no answer in 3 s: skip on-device translation this session */
-        if(av==='downloadable'||av==='downloading'){startCreate(s,t,key);return null}   /* use internet translation until the file is ready */
+        const av=await withTimeout(self.Translator.availability({sourceLanguage:sl,targetLanguage:tl}),3000);
+        if(av==='unavailable'||av===null){trCache[key]=false;return null}
+        if(av==='downloadable'||av==='downloading'){startCreate(sl,tl,key);return null}
         if(av!=='available') return null;
-        startCreate(s,t,key);
+        startCreate(sl,tl,key);
         await withTimeout(trLoading[key]||Promise.resolve(),5000);
         if(!trCache[key]) return null;
       }
@@ -820,63 +878,238 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
       return typeof out==='string'?out:null;
     }catch(e){return null}
   }
-  async function viaMyMemory(text,s,t){
+  /* basic engine 2: MyMemory, sent in sentence-sized pieces that are cached so a growing paragraph only re-sends its last piece */
+  const mmCache=new Map();
+  function pieces(m,text){
+    const segs=(m.segs&&m.segs.map(x=>x.text).join(sepFor(m.src))===text)?m.segs.map(x=>x.text):[text];
+    const out=[]; let cur='';
+    segs.forEach(sg=>{
+      const cand=cur?cur+sepFor(m.src)+sg:sg;
+      if(enc.encode(cand).length<=450){cur=cand;return}
+      if(cur) out.push(cur);
+      if(enc.encode(sg).length<=450){cur=sg;return}
+      const parts=chunks(sg,450); cur=parts.pop()||''; out.push(...parts);
+    });
+    if(cur) out.push(cur);
+    return out;
+  }
+  async function viaMyMemory(m,text,sl,tl){
     const outs=[];
-    for(const c of chunks(text,450)){
+    for(const c of pieces(m,text)){
+      const ck=sl+'>'+tl+':'+c;
+      if(mmCache.has(ck)){outs.push(mmCache.get(ck));continue}
       let j;
       try{
-        const r=await fetch('https://api.mymemory.translated.net/get?q='+encodeURIComponent(c)+'&langpair='+s+'|'+t+(email?'&de='+encodeURIComponent(email):''));
+        const r=await fetch('https://api.mymemory.translated.net/get?q='+encodeURIComponent(c)+'&langpair='+sl+'|'+tl+(email?'&de='+encodeURIComponent(email):''));
         j=await r.json();
       }catch(e){throw {code:'net'}}
       const out=j&&j.responseData&&j.responseData.translatedText;
       if(String(j&&j.responseStatus)==='429'||/MYMEMORY WARNING/i.test(out||'')) throw {code:'quota'};
       if(!out||String(j.responseStatus)!=='200') throw {code:'net'};
-      outs.push(decodeEntities(out));
+      const clean=decodeEntities(out);
+      mmCache.set(ck,clean); if(mmCache.size>600) mmCache.delete(mmCache.keys().next().value);
+      outs.push(clean);
     }
-    return outs.join(' ');
+    return outs.join(sepFor(tl));
   }
-  async function translateText(text,s,t){
-    const r=await viaChrome(text,s,t); if(r!=null) return r;
-    return await viaMyMemory(text,s,t);
+  async function basicTranslate(m,text,sl,tl){
+    const r=await viaChrome(text,sl,tl); if(r!=null) return r;
+    return await viaMyMemory(m,text,sl,tl);
   }
-  const trQ=[]; let trBusy=false, trWarnAt=0;
-  function queueSeg(m,seg){
+
+  /* AI engines: the whole paragraph plus the lines before it, so the result reads like an interpreter, not word-by-word */
+  function glossLines(){
+    return gloss.split(/\n/).map(x=>x.trim()).filter(Boolean).slice(0,60).join('\n').slice(0,2000);
+  }
+  function aiPrompt(m,text,sl,tl){
+    const sys=['You are a live interpreter inside a captioning app that helps a hearing person and a deaf or hard-of-hearing person talk face to face.',
+      'Translate the text after "TRANSLATE:" from '+LNAME[sl]+' into natural '+LNAME[tl]+'.',
+      '- The text may come from speech recognition: punctuation can be missing, sentences can be split oddly, and some words can be misheard. Use the context to infer what was meant and write a fluent, correctly punctuated translation.',
+      '- Keep the speaker\'s tone and politeness level (for example Korean polite speech becomes polite English or Japanese desu/masu style).',
+      '- Keep names, numbers, dates, times and page numbers exact.',
+      '- When a glossary term appears, use the given translation.',
+      '- The earlier lines are context only. Do not translate them.',
+      '- Reply with the translation only: no quotes, notes, romanization or explanations.'].join('\n');
+    const i=msgs.indexOf(m), prev=i>0?msgs.slice(Math.max(0,i-3),i):[];
+    const g=glossLines();
+    let user='';
+    if(g) user+='Glossary:\n'+g+'\n\n';
+    if(prev.length) user+='Earlier lines:\n'+prev.map(x=>(x.who==='them'?'[Reply] ':'[Speaker] ')+x.text).join('\n')+'\n\n';
+    user+='TRANSLATE:\n'+text;
+    return {sys,user};
+  }
+  const GEMINI_MODELS=['gemini-flash-lite-latest','gemini-3.5-flash-lite','gemini-3.1-flash-lite','gemini-flash-latest'];
+  let geminiModel=store.get('mm4.gmodel','');
+  async function viaGemini(sys,user){
+    if(!geminiKey) throw {code:'nokey'};
+    const list=geminiModel?[geminiModel].concat(GEMINI_MODELS.filter(x=>x!==geminiModel)):GEMINI_MODELS;
+    for(const model of list){
+      let r,j;
+      try{
+        r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+encodeURIComponent(geminiKey),{
+          method:'POST',headers:{'content-type':'application/json'},
+          body:JSON.stringify({systemInstruction:{parts:[{text:sys}]},contents:[{role:'user',parts:[{text:user}]}],generationConfig:{maxOutputTokens:2048}})});
+        j=await r.json().catch(()=>null);
+      }catch(e){throw {code:'net'}}
+      const msg=String(j&&j.error&&j.error.message||'');
+      if(r.status===404||(r.status===400&&/model|not found|not supported/i.test(msg)&&!/api key/i.test(msg))){if(geminiModel===model){geminiModel='';store.set('mm4.gmodel','')}continue}
+      if(r.status===400&&/api key/i.test(msg)||r.status===401||r.status===403) throw {code:'auth'};
+      if(r.status===429) throw {code:'rate'};
+      if(!r.ok) throw {code:'net'};
+      const parts=(j&&j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts)||[];
+      const out=parts.filter(x=>!x.thought).map(x=>x.text||'').join('').trim();
+      if(!out) throw {code:'empty'};
+      if(geminiModel!==model){geminiModel=model;store.set('mm4.gmodel',model)}
+      return out;
+    }
+    throw {code:'model'};
+  }
+  const CLAUDE_MODELS=['claude-haiku-5-5','claude-sonnet-5-5'];
+  async function viaClaude(sys,user){
+    if(!claudeKey) throw {code:'nokey'};
+    for(const model of CLAUDE_MODELS){
+      let r,j;
+      try{
+        r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
+          headers:{'content-type':'application/json','x-api-key':claudeKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+          body:JSON.stringify({model,max_tokens:1024,system:sys,messages:[{role:'user',content:user}]})});
+        j=await r.json().catch(()=>null);
+      }catch(e){throw {code:'net'}}
+      if(r.status===404) continue;
+      if(r.status===401||r.status===403) throw {code:'auth'};
+      if(r.status===429||r.status===529) throw {code:'rate'};
+      if(r.status===400&&/credit|billing|balance/i.test(String(j&&j.error&&j.error.message||''))) throw {code:'billing'};
+      if(!r.ok) throw {code:'net'};
+      const out=((j&&j.content)||[]).filter(x=>x.type==='text').map(x=>x.text).join('').trim();
+      if(!out) throw {code:'empty'};
+      return out;
+    }
+    throw {code:'model'};
+  }
+  const AI_MSG={
+    nokey:'AI 번역 키가 없어요. 설정 → 번역 엔진에서 API 키를 넣어 주세요. 지금은 기본 번역으로 해요.',
+    auth:'API 키가 맞지 않아요. 설정 → 번역 엔진에서 키를 확인해 주세요. 지금은 기본 번역으로 해요.',
+    rate:'AI 번역 사용 한도에 잠시 걸렸어요. 1분 동안 기본 번역으로 해요.',
+    billing:'Claude API 잔액이 부족해요. Claude Console에서 결제를 확인해 주세요. 지금은 기본 번역으로 해요.',
+    model:'AI 번역 모델을 찾지 못했어요. 지금은 기본 번역으로 해요.',
+    net:'AI 번역 서버에 연결하지 못했어요. 지금은 기본 번역으로 해요.',
+    empty:'AI 번역 결과가 비어 있어요. 지금은 기본 번역으로 해요.'
+  };
+  let aiPauseUntil=0, aiBroken='';
+  const aiReady=()=>engine!=='basic'&&!aiBroken&&Date.now()>=aiPauseUntil&&!!(engine==='gemini'?geminiKey:claudeKey);
+  async function aiTranslate(m,text,sl,tl,eng){
+    const {sys,user}=aiPrompt(m,text,sl,tl);
+    return (eng||engine)==='claude'?await viaClaude(sys,user):await viaGemini(sys,user);
+  }
+  async function translateMsg(m,text,sl,tl){
+    if(engine!=='basic'){
+      if(aiReady()){
+        try{return await aiTranslate(m,text,sl,tl)}
+        catch(e){
+          const c=(e&&e.code)||'net';
+          if(c==='rate') aiPauseUntil=Date.now()+60000;
+          if(c==='auth'||c==='billing'||c==='model') aiBroken=c;
+          trWarn(AI_MSG[c]||AI_MSG.net);
+        }
+      }else if(!aiBroken&&!(engine==='gemini'?geminiKey:claudeKey)) trWarn(AI_MSG.nokey);
+    }
+    return await basicTranslate(m,text,sl,tl);
+  }
+  let trWarnAt=0, trWarnLast='';
+  function trWarn(t){if(t===trWarnLast&&Date.now()-trWarnAt<30000)return;trWarnAt=Date.now();trWarnLast=t;setStatus(t,'warn')}
+
+  /* scheduler: one request at a time; a paragraph that keeps growing is re-translated as a whole once the speaker pauses briefly */
+  const trTimers=new Map(), trNeed=new Set(); let trBusy=false;
+  const trDelay=m=>m.who==='them'?0:(engine==='basic'?1200:650);
+  function scheduleTr(m,delay){
     if(!transActive()) return false;
     const tgt=targetFor(m); if(!tgt||tgt===m.src) return false;
-    if(seg.tr&&seg.trLang===tgt) return false;
-    seg.pending=true; m.trPending=true; trQ.push({m,seg,tgt}); pump(); return true;
-  }
-  function queueTr(m){
-    if(!m.segs) m.segs=[{text:m.text}];
-    let any=false; m.segs.forEach(seg=>{if(queueSeg(m,seg))any=true}); return any;
-  }
-  function joinTr(m){
-    const tgt=m.trLang, parts=m.segs.filter(x=>x.tr&&x.trLang===tgt).map(x=>x.tr);
-    m.tr=parts.join(sepFor(tgt)); m.trPending=m.segs.some(x=>x.pending);
+    if(m.tr&&m.trFor===m.text&&m.trLang===tgt) return false;
+    m.trPending=true;
+    clearTimeout(trTimers.get(m.id));
+    trTimers.set(m.id,setTimeout(()=>{trTimers.delete(m.id);trNeed.add(m);pump()},delay||0));
+    return true;
   }
   async function pump(){
-    if(trBusy) return; const job=trQ.shift(); if(!job) return; trBusy=true;
-    try{const out=await translateText(job.seg.text,job.m.src,job.tgt);job.seg.tr=out;job.seg.trLang=job.tgt;job.m.trLang=job.tgt}
-    catch(e){if(Date.now()-trWarnAt>30000){trWarnAt=Date.now();setStatus(e&&e.code==='quota'?MSG.trQuota:MSG.trNet,'warn')}}
-    job.seg.pending=false; joinTr(job.m); trBusy=false;
-    if(job.m.speakAfter){job.m.speakAfter=false;speakForMe(job.m)}
-    if(job.m.who==='them'&&!replyBanner.hidden&&replyBanner.dataset.id===String(job.m.id)) showBanner(job.m);
-    if(saveOn&&record.includes(job.m)) persistSoon();
+    if(trBusy) return;
+    const m=trNeed.values().next().value; if(!m) return;
+    trNeed.delete(m); trBusy=true;
+    const text=m.text, tgt=targetFor(m);
+    if(transActive()&&tgt&&tgt!==m.src){
+      try{const out=await translateMsg(m,text,m.src,tgt);if(out){m.tr=out.trim();m.trLang=tgt;m.trFor=text}}
+      catch(e){trWarn(e&&e.code==='quota'?MSG.trQuota:MSG.trNet)}
+    }
+    trBusy=false;
+    if(!trTimers.has(m.id)&&!trNeed.has(m)){
+      if(m.text!==text&&transActive()) scheduleTr(m,0);
+      else{
+        m.trPending=false;
+        if(m.speakAfter){m.speakAfter=false;speakForMe(m)}
+      }
+    }
+    if(m.who==='them'&&!replyBanner.hidden&&replyBanner.dataset.id===String(m.id)) showBanner(m);
+    if(saveOn&&record.includes(m)) persistSoon();
     renderCap(); if(!logSheet.hidden) renderLog();
     pump();
   }
+  function retranslateRecent(){
+    msgs.slice(-3).forEach(m=>{m.tr='';m.trLang='';m.trFor='';scheduleTr(m,0)});
+  }
   function prewarm(){
-    if(!HAS_TR||!transActive()) return;
-    [[speech,trans],[trans,speech]].forEach(([s,t])=>{
-      const key=s+'>'+t; if(trCache[key]) return; delete trCache[key];
-      try{startCreate(s,t,key)}catch(e){}
+    if(!HAS_TR||!transActive()||engine!=='basic') return;
+    [[speech,trans],[trans,speech]].forEach(([sl,tl])=>{
+      const key=sl+'>'+tl; if(trCache[key]) return; delete trCache[key];
+      try{startCreate(sl,tl,key)}catch(e){}
     });
   }
   function transNote(){
     if(!transActive()) return '번역을 켜면 자막 아래에 번역문이 함께 나와요. 영어·일본어·한국어를 지원해요.';
-    if(HAS_TR) return '이 기기(PC 크롬) 안에서 번역해요. 처음 한 번은 언어 파일을 내려받아요. 안 되면 인터넷 번역으로 바꿔서 해요.';
-    return email?'인터넷 번역(MyMemory)을 써요. 이메일이 등록되어 하루 50,000자까지 무료예요.':'인터넷 번역(MyMemory)을 써요. 하루 5,000자까지 무료이고, 설정에 이메일을 넣으면 50,000자로 늘어나요.';
+    if(engine==='gemini') return geminiKey?'Gemini AI가 앞뒤 말을 함께 보고 자연스럽게 번역해요.':'Gemini API 키를 설정에 넣어야 AI 번역이 돼요. 지금은 기본 번역으로 해요.';
+    if(engine==='claude') return claudeKey?'Claude AI가 앞뒤 말을 함께 보고 자연스럽게 번역해요.':'Claude API 키를 설정에 넣어야 AI 번역이 돼요. 지금은 기본 번역으로 해요.';
+    const tail=' 더 자연스러운 번역은 설정 → 번역 엔진에서 AI 번역을 켜세요.';
+    if(HAS_TR) return '이 기기(PC 크롬) 안에서 번역해요. 처음 한 번은 언어 파일을 내려받아요.'+tail;
+    return (email?'인터넷 번역(MyMemory)을 써요. 하루 50,000자까지 무료예요.':'인터넷 번역(MyMemory)을 써요. 하루 5,000자까지 무료예요.')+tail;
   }
+
+  /* settings: engine, keys, glossary, test */
+  function renderEngine(){
+    engineSeg.replaceChildren(
+      segBtn('기본 (무료)',engine==='basic',()=>setEngine('basic')),
+      segBtn('Gemini AI (무료 키)',engine==='gemini',()=>setEngine('gemini')),
+      segBtn('Claude AI (유료)',engine==='claude',()=>setEngine('claude')));
+    engBasic.hidden=engine!=='basic'; engGemini.hidden=engine!=='gemini'; engClaude.hidden=engine!=='claude';
+  }
+  function setEngine(e){
+    if(engine===e) return;
+    engine=e; store.set('mm4.engine',e); aiBroken=''; aiPauseUntil=0; engOut.textContent=''; engOut.className='eng-out';
+    renderEngine(); renderLangSegs(); prewarm();
+    if(transActive()) retranslateRecent();
+  }
+  function saveKey(which){
+    const v=(which==='g'?geminiKeyIn:claudeKeyIn).value.trim();
+    if(which==='g'){geminiKey=v;store.set('mm4.gkey',v);geminiModel='';store.set('mm4.gmodel','')} else {claudeKey=v;store.set('mm4.ckey',v)}
+    aiBroken=''; aiPauseUntil=0; renderLangSegs();
+  }
+  geminiKeyIn.addEventListener('change',()=>saveKey('g'));
+  claudeKeyIn.addEventListener('change',()=>saveKey('c'));
+  glossInput.addEventListener('change',()=>{gloss=glossInput.value;store.set('mm4.gloss',gloss)});
+  const SAMPLE={ko:'안녕하세요 오늘 수업은 세 시에 시작하니까 교재 42쪽을 미리 펴 두세요',en:'Hi everyone class starts at three today so please open your textbook to page 42',ja:'こんにちは 今日の授業は3時に始まるので教科書の42ページを開いておいてください'};
+  engTest.addEventListener('click',async()=>{
+    if(engine==='gemini') saveKey('g'); else if(engine==='claude') saveKey('c');
+    const sl=speech, tl=transActive()?trans:(speech==='en'?'ko':'en');
+    engOut.className='eng-out'; engOut.textContent='번역하는 중…'; engTest.disabled=true;
+    const fake={id:-1,who:'me',src:sl,text:SAMPLE[sl],segs:[{text:SAMPLE[sl]}]};
+    try{
+      const out=engine==='basic'?await basicTranslate(fake,fake.text,sl,tl):await aiTranslate(fake,fake.text,sl,tl);
+      engOut.className='eng-out ok'; engOut.textContent='성공 · '+out;
+      aiBroken=''; aiPauseUntil=0;
+    }catch(e){
+      const c=(e&&e.code)||'net';
+      engOut.className='eng-out warn';
+      engOut.textContent=c==='quota'?MSG.trQuota:(c==='nokey'?'API 키를 먼저 넣어 주세요.':(AI_MSG[c]||MSG.trNet).replace(' 지금은 기본 번역으로 해요.','').replace(' 1분 동안 기본 번역으로 해요.',' 잠시 뒤 다시 시험해 주세요.'));
+    }
+    engTest.disabled=false;
+  });
 
   /* ── speech in ── */
   let rec=null, wantListen=false, frameBlocked=false, ttsPause=false, lastFinal='';
@@ -935,7 +1168,7 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
     }catch(e){}
   }
   function openMicHelp(){
-    micHint.hidden=true; refreshMicState(); emailInput.value=email; openSheet(setSheet,setClose);
+    micHint.hidden=true; refreshMicState(); fillSettings(); openSheet(setSheet,setClose);
     setTimeout(()=>{try{micHelp.scrollIntoView({block:'start',behavior:'smooth'})}catch(e){micHelp.scrollIntoView()}},120);
   }
   micHintOpen.addEventListener('click',openMicHelp);
@@ -1003,6 +1236,23 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
     const v=typeInput.value; typeInput.value='';
     if(!wantListen) live='';
     if(v.trim()) addMsg('me',v); else renderCap();
+  });
+
+  /* ── reset the caption screen (saved record stays), with undo ── */
+  let undoSnap=null, undoT=null;
+  resetBtn.addEventListener('click',()=>{
+    if(!msgs.length&&!live){setStatus('지울 자막이 없어요.');return}
+    undoSnap=msgs.slice();
+    msgs.length=0; live=''; typeInput.value=''; replyBanner.hidden=true;
+    renderCap();
+    undoBar.hidden=false; clearTimeout(undoT);
+    undoT=setTimeout(()=>{undoBar.hidden=true;undoSnap=null},8000);
+  });
+  undoBtn.addEventListener('click',()=>{
+    clearTimeout(undoT); undoBar.hidden=true;
+    if(!undoSnap) return;
+    msgs.unshift(...undoSnap); undoSnap=null;
+    renderCap(); setStatus('자막을 되돌렸어요.');
   });
 
   /* ── reply sheet (the reader writes back, in their language) ── */
@@ -1124,7 +1374,7 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
   clearBtn.addEventListener('click',()=>{
     if(!record.length) return;
     if(clearArm&&Date.now()-clearArm<3000){
-      record=[]; persistNow(); msgs.length=0; live=''; typeInput.value=''; clearArm=0; clearBtn.textContent='기록 지우기';
+      record=[]; persistNow(); msgs.length=0; live=''; undoSnap=null; undoBar.hidden=true; typeInput.value=''; clearArm=0; clearBtn.textContent='기록 지우기';
       replyBanner.hidden=true; renderCap(); renderLog(); return;
     }
     clearArm=Date.now(); clearBtn.textContent='한 번 더 누르면 지워져요';
@@ -1145,7 +1395,8 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
     else if(store.get('mm3.micOk',false)) say('허용이 저장되지 않아서 누를 때마다 물어봐요. 아래 ‘허용 창이 매번 뜰 때’를 따라 해 주세요.','warn');
     else say('마이크를 처음 누를 때 권한을 물어봐요.');
   }
-  setBtn.addEventListener('click',()=>{refreshMicState();emailInput.value=email;openSheet(setSheet,setClose)});
+  function fillSettings(){emailInput.value=email;geminiKeyIn.value=geminiKey;claudeKeyIn.value=claudeKey;glossInput.value=gloss;renderEngine()}
+  setBtn.addEventListener('click',()=>{refreshMicState();fillSettings();openSheet(setSheet,setClose)});
   setClose.addEventListener('click',()=>closeSheet(setSheet));
   emailInput.addEventListener('change',()=>{
     const v=emailInput.value.trim();
@@ -1212,7 +1463,7 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
     trans=k; store.set('mm3.trans',k);
     applyLanguage(); prewarm();
     if(transActive()){
-      msgs.filter(m=>!m.trPending&&(!m.tr||m.trLang!==targetFor(m))).slice(-3).forEach(m=>{m.tr='';m.trLang='';(m.segs||[]).forEach(x=>{x.tr='';x.trLang=''});queueTr(m)});
+      msgs.filter(m=>!m.tr||m.trLang!==targetFor(m)).slice(-3).forEach(m=>{m.tr='';m.trLang='';m.trFor='';scheduleTr(m,0)});
       if(!wantListen) setStatus(LANGS[speech].name+'로 말하면 '+LANGS[trans].name+' 번역이 자막 아래에 함께 나와요.');
     }else if(!wantListen) setStatus('번역 자막을 껐어요.');
   }
@@ -1267,7 +1518,7 @@ button.chip.add{padding:0 15px;background:transparent;border:1px dashed var(--mu
 
   /* init */
   try{if(location.host)$('siteHost').textContent=location.host}catch(e){}
-  renderGapSeg(); setTts(ttsOn); setSave(saveOn,false); setCapTheme(capTheme); applyLayout(); applyLanguage(); setScale(si); micUI();
+  renderGapSeg(); renderEngine(); setTts(ttsOn); setSave(saveOn,false); setCapTheme(capTheme); applyLayout(); applyLanguage(); setScale(si); micUI();
   if(!SR){setStatus(MSG.unsupported,'warn');openType(false)} else if(fromFile) setStatus(MSG.fileWarn,'warn'); else setStatus(MSG.idle);
 })();
 </script>
